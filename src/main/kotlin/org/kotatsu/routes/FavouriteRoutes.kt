@@ -6,6 +6,8 @@ import io.ktor.server.routing.*
 import io.ktor.server.auth.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.kotatsu.coverStore
+import org.kotatsu.resources.COVER_CAPABILITY_HEADER
 import org.kotatsu.database
 import org.kotatsu.model.favourite.FavouritesPackage
 import org.kotatsu.plugins.currentUser
@@ -21,10 +23,14 @@ fun Route.favouriteRoutes() {
                 call.respond(HttpStatusCode.Unauthorized)
                 return@get
             }
-            val response = syncFavourites(user, null)
+            val response = withContext(Dispatchers.IO) {
+                val result = syncFavourites(user, null)
+                result.copy(favourites = result.favourites.map { it.copy(manga = coverStore.external(it.manga, user.id)) })
+            }
             call.respond(response)
         }
         post<FavouritesPackage>("/resource/favourites") { request ->
+            call.response.headers.append(COVER_CAPABILITY_HEADER, "1")
             val user = call.currentUser
             if (user == null) {
                 call.respond(HttpStatusCode.Unauthorized)

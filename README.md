@@ -178,3 +178,53 @@ migration is required. To deploy with Docker, run `docker compose up -d --build 
 [![GNU GPLv3 Image](https://www.gnu.org/graphics/gplv3-127x51.png)](http://www.gnu.org/licenses/gpl-3.0.en.html)
 
 You may copy, distribute and modify the software as long as you track changes/dates in source files. Any modifications to or software including (via compiler) GPL-licensed code must also be made available under the GPL along with build & install instructions.
+
+## Cover images for external consumers
+
+Read-only `GET /resource/history` and `GET /resource/favourites` return browser
+URLs for uploaded local covers and protected cover hosts. Android POST sync
+responses retain the original manga URLs and JSON schema, so offline reading
+and older clients remain compatible. No SELFbase code changes are needed.
+
+A compatible client checks `X-Kotatsu-Covers: 1` on a successful sync POST,
+then reads authenticated `GET /resource/covers`. The inventory contains
+`version`, `max_bytes`, and a `covers` map from decimal manga IDs to SHA-256.
+Only changed local images need authenticated `PUT /resource/covers/{mangaId}`
+with a raw JPEG, PNG, WebP or GIF body (maximum 5 MiB). The manga must be LOCAL
+and already belong to that user's history or favourites. Cover failures should
+not prevent normal reading-progress synchronization; clients can retry later.
+
+Set `COVERS_PUBLIC_BASE_URL` to an HTTPS URL reachable by browsers (including
+any reverse-proxy path prefix). It defaults to `BASE_URL`. The default localhost
+URL is unsuitable for another device's browser. Persist `COVERS_DIR` outside
+the container: Compose mounts the `kotatsu-covers` volume automatically.
+Per-user cover pointers and immutable, content-addressed blobs survive restarts.
+Public cover URLs are signed capabilities, not account bearer tokens. Rotating
+`JWT_SECRET` invalidates old URLs; fresh API reads issue new ones.
+
+`COVER_REFERERS` is an optional JSON map of exact HTTPS image hosts to their
+required Referer. Defaults cover MangaLib's `cover.cdnlibs.org` and
+`cover.imglib.info`. Other hosts are returned unchanged. The proxy follows no
+redirects, forwards no account credentials, rejects private destinations and
+non-image responses, bounds response size, and caches successful images for
+one day. There is no arbitrary upstream URL endpoint.
+
+Both Compose variants set `restart: unless-stopped` on the database and server.
+`depends_on: service_healthy` orders a Compose startup; the restart policy also
+brings the database back when Docker starts after a host reboot. An explicitly
+stopped container remains stopped until started again.
+
+For a Caddy deployment sharing a hostname with SELFbase, expose the sync server
+under a stripped prefix and configure `COVERS_PUBLIC_BASE_URL` with the same
+public prefix (include a nonstandard HTTPS port when applicable):
+
+```caddy
+example.com {
+    handle_path /kotatsu-sync/* {
+        reverse_proxy sync-server:8080
+    }
+    handle {
+        reverse_proxy selfbase:3012
+    }
+}
+```

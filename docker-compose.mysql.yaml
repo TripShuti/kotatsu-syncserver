@@ -1,5 +1,6 @@
 services:
   db:
+    restart: unless-stopped
     image: mysql:8.4
     ports:
       - "3306:3306"
@@ -30,4 +31,5 @@ services:
         condition: service_healthy
 
 volumes:
+  kotatsu-covers:
   kotatsu-db:

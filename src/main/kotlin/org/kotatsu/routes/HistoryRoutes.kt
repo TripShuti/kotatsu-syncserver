@@ -6,6 +6,8 @@ import io.ktor.server.routing.*
 import io.ktor.server.auth.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.kotatsu.coverStore
+import org.kotatsu.resources.COVER_CAPABILITY_HEADER
 import org.kotatsu.database
 import org.kotatsu.model.history.HistoryPackage
 import org.kotatsu.plugins.currentUser
@@ -24,12 +26,14 @@ fun Route.historyRoutes() {
             }
 
             val response = withContext(Dispatchers.IO) {
-                syncHistory(user, null)
+                val result = syncHistory(user, null)
+                result.copy(history = result.history.map { it.copy(manga = coverStore.external(it.manga, user.id)) })
             }
 
             call.respond(response.withChapterPositions())
         }
         post<HistoryPackage>("/resource/history") { request ->
+            call.response.headers.append(COVER_CAPABILITY_HEADER, "1")
             val user = call.currentUser
             if (user == null) {
                 call.respond(HttpStatusCode.Unauthorized)

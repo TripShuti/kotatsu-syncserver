@@ -2,12 +2,17 @@ services:
   server:
     container_name: kotatsu-sync
     build: .
+    volumes:
+      - ${COVERS_DATA_PATH:-kotatsu-covers}:/app/data/covers
     environment:
       DATABASE_HOST: db
       DATABASE_USER: ${DATABASE_USER:-kotatsu}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:-password}
       DATABASE_NAME: ${DATABASE_NAME:-kotatsu_db}
       DATABASE_PORT: 3306
+      COVERS_DIR: /app/data/covers
+      COVERS_PUBLIC_BASE_URL: ${COVERS_PUBLIC_BASE_URL:-}
+      COVER_REFERERS: ${COVER_REFERERS:-}
       BASE_URL: ${BASE_URL:-http://localhost:8080}
       JWT_SECRET: ${JWT_SECRET:-secret-string}
       ALLOW_NEW_REGISTER: ${ALLOW_NEW_REGISTER:-true}

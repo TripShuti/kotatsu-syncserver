@@ -1,5 +1,6 @@
 services:
   db:
+    restart: unless-stopped
     image: mariadb:11.8
     ports:
       - "3306:3306"
@@ -28,4 +29,5 @@ services:
         condition: service_healthy
 
 volumes:
+  kotatsu-covers:
   kotatsu-db:

@@ -11,6 +11,7 @@ import org.kotatsu.model.history.HistoryPackage
 import org.kotatsu.plugins.currentUser
 import org.kotatsu.resources.setHistorySynchronized
 import org.kotatsu.resources.syncHistory
+import org.kotatsu.model.history.withChapterPositions
 import org.ktorm.database.TransactionIsolation
 
 fun Route.historyRoutes() {
@@ -26,7 +27,7 @@ fun Route.historyRoutes() {
                 syncHistory(user, null)
             }
 
-            call.respond(response)
+            call.respond(response.withChapterPositions())
         }
         post<HistoryPackage>("/resource/history") { request ->
             val user = call.currentUser

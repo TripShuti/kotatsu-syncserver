@@ -161,6 +161,18 @@ curl -X POST "{syncserver_address}/reset-password" \
 
 Password has been successfully reset!
 
+## Reading position for integrations
+
+Authenticated `GET /resource/history` responses include `current_chapter` on
+each history record. It is the one-based position of the current chapter,
+calculated as `ceil(percent * chapters)` and bounded to `1..chapters`.
+It includes a partly read chapter and is not the chapter's catalogue label.
+Floating-point rounding near chapter boundaries can shift the position by one.
+Invalid progress or an unknown chapter count produces `null`.
+
+The Android `POST /resource/history` sync format is unchanged. No database
+migration is required. To deploy with Docker, run `docker compose up -d --build server`.
+
 ## License
 
 [![GNU GPLv3 Image](https://www.gnu.org/graphics/gplv3-127x51.png)](http://www.gnu.org/licenses/gpl-3.0.en.html)
